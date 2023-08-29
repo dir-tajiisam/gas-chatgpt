@@ -9,6 +9,7 @@
 # and our transpiled code
 
 !build/*.js
+!src/*.ts
 
 # ignore even valid files if in…
 

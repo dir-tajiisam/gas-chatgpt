@@ -1,98 +1,96 @@
-import { SYSTEM_CONTENT, USER_CONTENT } from "index";
-
-type ChatRequestData = {
-  model: string;
-  messages: { role: string; content: string }[];
-  max_tokens: number;
-};
-
-type ChatResponseData = {
-  usage: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
+namespace RequestOpenAI {
+  type ChatRequestData = {
+    model: string;
+    messages: { role: string; content: string }[];
+    max_tokens: number;
   };
-  choices: {
-    message: {
-      role: string;
-      content: string;
+
+  type ChatResponseData = {
+    usage: {
+      prompt_tokens: number;
+      completion_tokens: number;
+      total_tokens: number;
     };
-    finish_reason: string;
-    index: number;
-  }[];
-};
-
-const endpoint = "https://api.openai.com/v1/chat/completions";
-
-const chat = (prompt: string, maxTokens: number) => {
-  const requestData: ChatRequestData = {
-    model: "gpt-3.5-turbo",
-    // model: 'gpt-4',
-    messages: [
-      {
-        role: "system",
-        content: SYSTEM_CONTENT
-      },
-      { role: "user", content: prompt }
-    ],
-    max_tokens: maxTokens
+    choices: {
+      message: {
+        role: string;
+        content: string;
+      };
+      finish_reason: string;
+      index: number;
+    }[];
   };
 
-  const res = UrlFetchApp.fetch(endpoint, {
-    method: "post",
-    contentType: "application/json",
-    headers: {
-      Authorization:
-        "Bearer " +
-        PropertiesService.getScriptProperties().getProperty("OPENAI_API_KEY")
-    },
-    payload: JSON.stringify(requestData)
-  });
+  const endpoint = "https://api.openai.com/v1/chat/completions";
 
-  // const res = await Promise.resolve({ data: { choices: [{ message: { content: prompt } }] } });
-  console.log(res.getContentText());
-  const { message } = (JSON.parse(res.getContentText()) as ChatResponseData)
-    .choices[0];
+  const chat = (prompt: string, maxTokens: number) => {
+    const requestData: ChatRequestData = {
+      model: "gpt-3.5-turbo",
+      // model: 'gpt-4',
+      messages: [
+        {
+          role: "system",
+          content: SYSTEM_CONTENT.CONTENT
+        },
+        { role: "user", content: prompt }
+      ],
+      max_tokens: maxTokens
+    };
 
-  return message.content;
-};
+    const res = UrlFetchApp.fetch(endpoint, {
+      method: "post",
+      contentType: "application/json",
+      headers: {
+        Authorization:
+          "Bearer " +
+          PropertiesService.getScriptProperties().getProperty("OPENAI_API_KEY")
+      },
+      payload: JSON.stringify(requestData)
+    });
 
-const prompt = (context: string) => {
-  const template = USER_CONTENT;
+    // const res = await Promise.resolve({ data: { choices: [{ message: { content: prompt } }] } });
+    console.log(res.getContentText());
+    const { message } = (JSON.parse(res.getContentText()) as ChatResponseData)
+      .choices[0];
 
-  return template.replace("[[CONTEXT]]", context);
-};
+    return message.content;
+  };
 
-const validate = (content: string) => {
-  // validate evaluations
-  if (content.length === 0) {
-    return { valid: false, message: "context must not be empty" };
-  }
+  const prompt = (context: string) => {
+    const template = USER_CONTENT.CONTENT;
 
-  return { valid: true, message: "" };
-};
+    return template.replace("[[CONTEXT]]", context);
+  };
 
-const handler = (context: string): string | null => {
-  // Parse Request Body as EvaluationsType
-  const { valid, message } = validate(context);
-  if (!valid) {
-    console.error(message);
+  const validate = (content: string) => {
+    // validate evaluations
+    if (content.length === 0) {
+      return { valid: false, message: "context must not be empty" };
+    }
 
-    return null;
-  }
+    return { valid: true, message: "" };
+  };
 
-  // call openai api
-  const maxTokens = 2000;
+  export const handler = (context: string): string | null => {
+    // Parse Request Body as EvaluationsType
+    const { valid, message } = validate(context);
+    if (!valid) {
+      console.error(message);
 
-  try {
-    const text = chat(prompt(context), maxTokens);
+      return null;
+    }
 
-    return text;
-  } catch (error) {
-    console.error(error);
+    // call openai api
+    const maxTokens = 2000;
 
-    return null;
-  }
-};
+    try {
+      const text = chat(prompt(context), maxTokens);
 
-export default handler;
+      return text;
+    } catch (error) {
+      console.error(error as Error);
+
+      return null;
+    }
+  };
+}

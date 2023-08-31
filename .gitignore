@@ -1,4 +1,4 @@
 node_modules/
 build/*
 .clasp.json
-Documents/.DS_Store
+.DS_Store

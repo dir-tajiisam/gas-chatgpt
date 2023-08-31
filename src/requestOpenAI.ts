@@ -20,18 +20,28 @@ namespace RequestOpenAI {
       index: number;
     }[];
   };
+  export type Message = {
+    role: string;
+    content: string;
+  };
 
   const endpoint = "https://api.openai.com/v1/chat/completions";
 
-  const chat = (prompt: string, maxTokens: number) => {
+  const chat = (
+    prompt: string,
+    conversations: Message[],
+    maxTokens: number
+  ) => {
     const requestData: ChatRequestData = {
-      model: "gpt-3.5-turbo",
+      model: "gpt-3.5-turbo-16k",
+      // model: "gpt-3.5-turbo",
       // model: 'gpt-4',
       messages: [
         {
           role: "system",
           content: SYSTEM_CONTENT.CONTENT
         },
+        ...conversations,
         { role: "user", content: prompt }
       ],
       max_tokens: maxTokens
@@ -71,26 +81,30 @@ namespace RequestOpenAI {
     return { valid: true, message: "" };
   };
 
-  export const handler = (context: string): string | null => {
+  export const handler = (
+    context: string,
+    conversations: Message[] = []
+  ): [string, string] => {
     // Parse Request Body as EvaluationsType
     const { valid, message } = validate(context);
     if (!valid) {
       console.error(message);
 
-      return null;
+      return ["error", "error"];
     }
 
     // call openai api
-    const maxTokens = 2000;
+    const maxTokens = 1000;
 
     try {
-      const text = chat(prompt(context), maxTokens);
+      const request = prompt(context);
+      const response = chat(request, conversations, maxTokens);
 
-      return text;
+      return [request, response];
     } catch (error) {
       console.error(error as Error);
 
-      return null;
+      return ["error", "error"];
     }
   };
 }
